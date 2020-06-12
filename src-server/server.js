@@ -130,7 +130,11 @@ var authMiddleWare = (req, res, next) => {
 
 		console.log(req.headers.authorization);
 
+		if(req.headers.authorization) {
+
 		const tokenParts = req.headers.authorization.split(':');
+
+		if (tokenParts[1]) {
 
     //extract the IV from the first half of the value
     const IV = Buffer.from(tokenParts.shift(), 'hex');
@@ -151,7 +155,7 @@ var authMiddleWare = (req, res, next) => {
 				next();
 			} else {
 				res.set({
-			"Content-Type": "application/json",
+			"Content-Type": "text/plain",
 			"Access-Control-Allow-Origin" : "*"
 			});
 
@@ -159,6 +163,22 @@ var authMiddleWare = (req, res, next) => {
 			}
 
 		});
+	} else {
+		res.set({
+			"Content-Type": "text/plain",
+			"Access-Control-Allow-Origin" : "*"
+		});
+
+		res.status(401).send("Invalid Auth Token!");
+	}
+	} else {
+		res.set({
+			"Content-Type": "text/plain",
+			"Access-Control-Allow-Origin" : "*"
+		});
+
+		res.status(401).send("Invalid Auth Token!");
+	}
 };
 
 app.use('/pvt', authMiddleWare, privateCtr);
