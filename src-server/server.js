@@ -1,36 +1,46 @@
 //NoteKeeper - nodejs server
-const http = require('http'),
-	fs = require('fs'),
-	path = require('path'),
-	constants = require('constants'),
-    https = require('https');
+'use strict';
+const fs = require('fs'),
+    https = require('https'),
+    spdy = require('spdy'),
+    path = require('path'),
+    jwt = require('jsonwebtoken'),
+    constants = require('constants'),
+    rateLimit = require("express-rate-limit"),
+    crypto = require('crypto'),
+    bcrypt = require('bcrypt'),
+    express = require('express'),
+    bodyParser = require('body-parser'),
+    nodemailer = require('nodemailer'),
+    multer = require('multer'),
+    helmet = require('helmet');
 
-		const caCrt = fs.readFileSync('/home/bitnami/notekeeper.bithatchery.com.ca-bundle').toString();
+require('dotenv').config({
+    path: path.resolve(__dirname, './.env')
+});
 
-		const sslOptions = {
-		  secureProtocol: 'SSLv23_method', //Poodlebleed Fix - Disables SSL 3.0
-		  secureOptions: constants.SSL_OP_NO_SSLv3,	//Poodlebleed Fix - Disables SSL 3.0 */
-		  key: fs.readFileSync('/home/bitnami/notekeeper.bithatchery.com.key').toString(),
-		  cert: fs.readFileSync('/home/bitnami/notekeeper.bithatchery.com.crt').toString(),
-		  ca: [caCrt],
-		  ciphers: 'ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384', //:RC4-SHA:RC4:HIGH:!MD5:!aNULL:!EDH:!AESGCM
-		  honorCipherOrder: true,
-		  requestCert: false
-		};
+const caCrt = fs.readFileSync('/home/bitnami/notekeeper.bithatchery.com.ca-bundle').toString();
 
-require('dotenv').config({ path: path.resolve(__dirname,'./.env') });
+const sslOptions = {
+    secureProtocol: 'SSLv23_method', //Poodlebleed Fix - Disables SSL 3.0
+    secureOptions: constants.SSL_OP_NO_SSLv3, //Poodlebleed Fix - Disables SSL 3.0 */
+    key: fs.readFileSync('/home/bitnami/notekeeper.bithatchery.com.key').toString(),
+    cert: fs.readFileSync('/home/bitnami/notekeeper.bithatchery.com.crt').toString(),
+    ca: [caCrt],
+    ciphers: 'ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384', //:RC4-SHA:RC4:HIGH:!MD5:!aNULL:!EDH:!AESGCM
+    honorCipherOrder: true,
+    requestCert: false
+};
 
 console.log(process.env.SERVER_PORT);
-
-const rateLimit = require("express-rate-limit");
 
 // Enable if you're behind a reverse proxy (Heroku, Bluemix, AWS ELB, Nginx, etc)
 // see https://expressjs.com/en/guide/behind-proxies.html
 // app.set('trust proxy', 1);
 
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100 // limit each IP to 100 requests per windowMs
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100 // limit each IP to 100 requests per windowMs
 });
 
 //Email Settings
@@ -41,30 +51,13 @@ const emailUsername = process.env.EMAIL_USERNAME;
 const emailPassword = process.env.EMAIL_PASSWORD;
 const emailFromAddr = process.env.EMAIL_FROM_ADDRESS;
 
-const crypto = require('crypto');
-
 //Server Settings
 const port = Number(process.env.SERVER_PORT);
 
-const spdy = require('spdy');
-const helmet = require('helmet');
-
-const express = require('express')
-
-const jwt = require('jsonwebtoken');
-
-const bcrypt = require('bcrypt');
 const saltRounds = 10;
 
-const multer = require('multer');
 const upload = multer();
 const app = express();
-
-const bodyParser = require('body-parser');
-
-'use strict';
-const nodemailer = require('nodemailer');
-
 
 const jwtKey = process.env.JWT_KEY;
 const authKey = process.env.AUTH_KEY;
@@ -93,7 +86,9 @@ app.use(helmet());
 app.options('*', cors());
 
 app.use(bodyParser.json()); // support json encoded bodies
-app.use(bodyParser.urlencoded({ extended: true })); // support encoded bodies
+app.use(bodyParser.urlencoded({
+    extended: true
+})); // support encoded bodies
 
 // for parsing multipart/form-data
 app.use(upload.array());
@@ -126,59 +121,59 @@ app.use('/pub', publicCtr);
 
 var authMiddleWare = (req, res, next) => {
 
-		console.log('Auth')
+    console.log('Auth')
 
-		console.log(req.headers.authorization);
+    console.log(req.headers.authorization);
 
-		if(req.headers.authorization) {
+    if (req.headers.authorization) {
 
-		const tokenParts = req.headers.authorization.split(':');
+        const tokenParts = req.headers.authorization.split(':');
 
-		if (tokenParts[1]) {
+        if (tokenParts[1]) {
 
-    //extract the IV from the first half of the value
-    const IV = Buffer.from(tokenParts.shift(), 'hex');
+            //extract the IV from the first half of the value
+            const IV = Buffer.from(tokenParts.shift(), 'hex');
 
-		//extract the encrypted text without the IV
-    const encryptedText = Buffer.from(tokenParts.join(':'), 'hex');
+            //extract the encrypted text without the IV
+            const encryptedText = Buffer.from(tokenParts.join(':'), 'hex');
 
-		var decipher = crypto.createDecipheriv('aes-256-ctr', authKey, IV);
-		var decrypted_jwt = decipher.update(encryptedText, 'hex', 'utf8');
-		decrypted_jwt += decipher.final('utf8');
+            var decipher = crypto.createDecipheriv('aes-256-ctr', authKey, IV);
+            var decrypted_jwt = decipher.update(encryptedText, 'hex', 'utf8');
+            decrypted_jwt += decipher.final('utf8');
 
-	  jwt.verify(decrypted_jwt.toString(), jwtKey, function(err, decoded) {
-			console.log("Verifying JWT " + JSON.stringify(decoded)); // bar
+            jwt.verify(decrypted_jwt.toString(), jwtKey, function(err, decoded) {
+                console.log("Verifying JWT " + JSON.stringify(decoded)); // bar
 
-			if (!err && decoded) {
-				res.locals.id = decoded.id;
-				res.locals.email = decoded.email;
-				next();
-			} else {
-				res.set({
-			"Content-Type": "text/plain",
-			"Access-Control-Allow-Origin" : "*"
-			});
+                if (!err && decoded) {
+                    res.locals.id = decoded.id;
+                    res.locals.email = decoded.email;
+                    next();
+                } else {
+                    res.set({
+                        "Content-Type": "text/plain",
+                        "Access-Control-Allow-Origin": "*"
+                    });
 
-				res.status(401).send("Invalid Auth Token!");
-			}
+                    res.status(401).send("Invalid Auth Token!");
+                }
 
-		});
-	} else {
-		res.set({
-			"Content-Type": "text/plain",
-			"Access-Control-Allow-Origin" : "*"
-		});
+            });
+        } else {
+            res.set({
+                "Content-Type": "text/plain",
+                "Access-Control-Allow-Origin": "*"
+            });
 
-		res.status(401).send("Invalid Auth Token!");
-	}
-	} else {
-		res.set({
-			"Content-Type": "text/plain",
-			"Access-Control-Allow-Origin" : "*"
-		});
+            res.status(401).send("Invalid Auth Token!");
+        }
+    } else {
+        res.set({
+            "Content-Type": "text/plain",
+            "Access-Control-Allow-Origin": "*"
+        });
 
-		res.status(401).send("Invalid Auth Token!");
-	}
+        res.status(401).send("Invalid Auth Token!");
+    }
 };
 
 app.use('/pvt', authMiddleWare, privateCtr);
