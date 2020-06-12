@@ -1,16 +1,14 @@
-exports.newNote = (req, res, NoteModel, jwt, jwtKey, authKey) => {
+exports.newNote = (req, res) => {
   console.log('\n\nnew note\n\n');
+  console.log(res.locals.id + ", " + res.locals.email);
+
+  const NoteModel = req.app.locals.NoteModel;
 
                   var data = req.body;
 
           console.log(JSON.stringify(data));
 
   var resData = {};
-
-  jwt.verify(req.headers.authorization, jwtKey, function(err, decoded) {
-  console.log(JSON.stringify(decoded)) // bar
-
-  if (!err && decoded.authKey ===  authKey) {
 
     var nNote = new NoteModel();
 
@@ -32,18 +30,4 @@ exports.newNote = (req, res, NoteModel, jwt, jwtKey, authKey) => {
 
     res.status(200).send(JSON.stringify(resData));
 
-  }
-  else {
-    res.set({
-    "Content-Type": "application/javascript",
-    "Access-Control-Allow-Origin" : "*"
-    });
-
-    resData.status = 'failed';
-    resData.msg = 'Your session is invalid. Please login again.';
-
-    res.status(403).send(JSON.stringify(resData));
-  }
-
-  });
 };

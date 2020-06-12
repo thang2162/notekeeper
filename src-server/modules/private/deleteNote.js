@@ -1,12 +1,10 @@
-exports.deleteNote = (req, res, NoteModel, jwt, jwtKey, authKey) => {
+exports.deleteNote = (req, res) => {
   console.log('\n\ndeleteNote\n\n');
+  console.log(res.locals.id + ", " + res.locals.email);
+
+  const NoteModel = req.app.locals.NoteModel;
 
   var resData = {};
-
-  jwt.verify(req.headers.authorization, jwtKey, function(err, decoded) {
-  console.log(JSON.stringify(decoded)) // bar
-
-  if (!err && decoded.authKey ===  authKey) {
 
   //  UserModel.createIndexes( { "$**": "text" } )
 
@@ -38,18 +36,4 @@ exports.deleteNote = (req, res, NoteModel, jwt, jwtKey, authKey) => {
 
   );
 
-  }
-  else {
-    res.set({
-    "Content-Type": "application/javascript",
-    "Access-Control-Allow-Origin" : "*"
-    });
-
-    resData.status = 'failed';
-    resData.msg = 'Your session is invalid. Please login again.';
-
-    res.status(403).send(JSON.stringify(resData));
-  }
-
-  });
 };

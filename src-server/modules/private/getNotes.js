@@ -1,16 +1,14 @@
-exports.getNotes = (req, res, NoteModel, jwt, jwtKey, authKey) => {
+exports.getNotes = (req, res) => {
   console.log('\n\ndispNotePage\n\n');
+  console.log(res.locals.id + ", " + res.locals.email);
+
+  const NoteModel = req.app.locals.NoteModel;
 
   var resData = {};
 
   var notesArr = [];
 
-  jwt.verify(req.headers.authorization, jwtKey, function(err, decoded) {
-  console.log(JSON.stringify(decoded)) // bar
-
-  if (!err && decoded.authKey ===  authKey) {
-
-    var notesCursor = NoteModel.find({email: decoded.email}).sort({CreatedOn: -1}).batchSize(10000).lean().cursor();
+    var notesCursor = NoteModel.find({email: res.locals.email}).sort({CreatedOn: -1}).batchSize(10000).lean().cursor();
 
      notesCursor.addCursorFlag('noCursorTimeout', true);
 
@@ -35,18 +33,4 @@ exports.getNotes = (req, res, NoteModel, jwt, jwtKey, authKey) => {
 
 
     }); //notesCursor
-  }
-  else {
-    res.set({
-    "Content-Type": "application/javascript",
-    "Access-Control-Allow-Origin" : "*"
-    });
-
-    resData.status = 'failed';
-    resData.msg = 'Your session is invalid. Please login again.';
-
-    res.status(403).send(JSON.stringify(resData));
-  }
-
-  });
 };

@@ -1,5 +1,8 @@
-exports.editNote = (req, res, NoteModel, jwt, jwtKey, authKey) => {
+exports.editNote = (req, res) => {
   console.log('\n\nedit note\n\n');
+  console.log(res.locals.id + ", " + res.locals.email);
+
+  const NoteModel = req.app.locals.NoteModel;
 
                   var data = req.body;
 
@@ -7,12 +10,7 @@ exports.editNote = (req, res, NoteModel, jwt, jwtKey, authKey) => {
 
   var resData = {};
 
-  jwt.verify(req.headers.authorization, jwtKey, function(err, decoded) {
-  console.log(JSON.stringify(decoded)) // bar
-
-  if (!err && decoded.authKey ===  authKey) {
-
-  	NoteModel.updateOne({ _id: data.note_id, email: decoded.email}, { $set: { title: data.title, note: data.note, CreatedOn: new Date() } },
+  	NoteModel.updateOne({ _id: data.note_id, email: res.locals.email}, { $set: { title: data.title, note: data.note, CreatedOn: new Date() } },
   		//	PharmaciesModel.updateOne({ sureScriptPharmacy_id: doc.sureScriptPharmacy_id }, { $set: { longitude: response.json.results[0].geometry.location.lng, latitude: response.json.results[0].geometry.location.lat} },
   		function (err) {
 
@@ -48,19 +46,4 @@ exports.editNote = (req, res, NoteModel, jwt, jwtKey, authKey) => {
   		}
   	);
 
-
-  }
-  else {
-    res.set({
-    "Content-Type": "application/javascript",
-    "Access-Control-Allow-Origin" : "*"
-    });
-
-    resData.status = 'failed';
-    resData.msg = 'Your session is invalid. Please login again.';
-
-    res.status(403).send(JSON.stringify(resData));
-  }
-
-  });
 };

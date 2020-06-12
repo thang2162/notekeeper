@@ -1,8 +1,11 @@
 var mongoose = require('mongoose/');
+const dotenv = require('dotenv');
+dotenv.config();
 
 mongoose.set('useFindAndModify', false);
+mongoose.set('useUnifiedTopology', true);
 
-mongoose.connect('mongodb+srv://', { useNewUrlParser: true });
+mongoose.connect(process.env.DB_URL, { useNewUrlParser: true });
 
 
 var Schema = mongoose.Schema;

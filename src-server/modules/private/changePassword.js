@@ -1,19 +1,24 @@
-exports.changePassword = (req, res, UserModel, bcrypt, jwt, jwtKey, authKey, saltRounds) => {
+exports.changePassword = (req, res) => {
 
   console.log('\n\changePassword\n\n');
+
+  console.log(res.locals.id + ", " + res.locals.email);
+
+  const UserModel = req.app.locals.UserModel;
+
+  const bcrypt = req.app.locals.bcrypt;
+
+  const saltRounds = req.app.locals.saltRounds;
+
                   var data = req.body;
 
           console.log(JSON.stringify(data));
 
   var resData = {};
 
-  jwt.verify(req.headers.authorization, jwtKey, function(err, decoded) {
-  console.log(JSON.stringify(decoded)) // bar
-
-  if (!err && decoded.authKey ===  authKey) {
 
   //  UserModel.createIndexes( { "$**": "text" } )
-  UserModel.findOne({ email: decoded.email }, function (err, doc) {
+  UserModel.findOne({ email: res.locals.email }, function (err, doc) {
 
   if(doc != null){
 
@@ -27,7 +32,7 @@ exports.changePassword = (req, res, UserModel, bcrypt, jwt, jwtKey, authKey, sal
           bcrypt.hash(data.newPassword, saltRounds, function(err, hash) {
 
           if(!err){
-          UserModel.updateOne({ email: decoded.email}, { $set: { password: hash} },
+          UserModel.updateOne({ email: res.locals.email}, { $set: { password: hash} },
             //	PharmaciesModel.updateOne({ sureScriptPharmacy_id: doc.sureScriptPharmacy_id }, { $set: { longitude: response.json.results[0].geometry.location.lng, latitude: response.json.results[0].geometry.location.lat} },
             function (err) {
 
@@ -108,24 +113,6 @@ exports.changePassword = (req, res, UserModel, bcrypt, jwt, jwtKey, authKey, sal
   });
 
     res.status(200).send(JSON.stringify(resData));
-  }
-
-  });
-
-
-
-
-  }
-  else {
-    res.set({
-    "Content-Type": "application/javascript",
-    "Access-Control-Allow-Origin" : "*"
-    });
-
-    resData.status = 'failed';
-    resData.msg = 'Your session is invalid. Please login again.';
-
-    res.status(403).send(JSON.stringify(resData));
   }
 
   });

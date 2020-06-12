@@ -1,16 +1,15 @@
-exports.deleteUser = (req, res, UserModel, NoteModel, jwt, jwtKey, authKey) => {
+exports.deleteUser = (req, res) => {
   console.log('\n\ndeleteUser\n\n');
+  console.log(res.locals.id + ", " + res.locals.email);
+
+  const NoteModel = req.app.locals.NoteModel;
+  const UserModel = req.app.locals.UserModel;
 
   var resData = {};
 
-  jwt.verify(req.headers.authorization, jwtKey, function(err, decoded) {
-  console.log(JSON.stringify(decoded)) // bar
-
-  if (!err && decoded.authKey ===  authKey) {
-
   //  UserModel.createIndexes( { "$**": "text" } )
 
-  NoteModel.deleteMany({ email: decoded.email }, function(err) {
+  NoteModel.deleteMany({ email: res.locals.email }, function(err) {
 
   res.set({
   "Content-Type": "application/javascript",
@@ -20,7 +19,7 @@ exports.deleteUser = (req, res, UserModel, NoteModel, jwt, jwtKey, authKey) => {
   if(!err)
   {
 
-    UserModel.deleteOne({ email: decoded.email }, function (err2) {
+    UserModel.deleteOne({ email: res.locals.email }, function (err2) {
 
       if(!err2)
       {
@@ -53,18 +52,4 @@ exports.deleteUser = (req, res, UserModel, NoteModel, jwt, jwtKey, authKey) => {
 
   );
 
-  }
-  else {
-    res.set({
-    "Content-Type": "application/javascript",
-    "Access-Control-Allow-Origin" : "*"
-    });
-
-    resData.status = 'failed';
-    resData.msg = 'Your session is invalid. Please login again.';
-
-    res.status(403).send(JSON.stringify(resData));
-  }
-
-  });
 };

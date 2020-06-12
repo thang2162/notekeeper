@@ -1,29 +1,46 @@
 //NoteKeeper - nodejs server
-
-//Email Settings
-const emailHost = "smtp.email.com";
-const emailPort = 587;
-const emailSecure = false;
-const emailUsername = "email@email.com";
-const emailPassword = "password";
-const emailFromAddr = "email@email.com";
-
-//Server Settings
-const port = 5443
-
-var http = require('http'),
+const http = require('http'),
 	fs = require('fs'),
 	path = require('path'),
 	constants = require('constants'),
     https = require('https');
 
-var caCrt = fs.readFileSync('/home/bitnami/notekeeper.bithatchery.com.ca-bundle').toString();
+require('dotenv').config();
 
-var sslOptions = {
+const rateLimit = require("express-rate-limit");
+
+// Enable if you're behind a reverse proxy (Heroku, Bluemix, AWS ELB, Nginx, etc)
+// see https://expressjs.com/en/guide/behind-proxies.html
+// app.set('trust proxy', 1);
+
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100 // limit each IP to 100 requests per windowMs
+});
+
+//Email Settings
+const emailHost = process.env.EMAIL_HOST;
+const emailPort = Number(process.env.EMAIL_PORT);
+const emailSecure = Boolean(process.env.EMAIL_IS_SECURE);
+const emailUsername = process.env.EMAIL_USERNAME;
+const emailPassword = process.env.EMAIL_PASSWORD;
+const emailFromAddr = process.env.EMAIL_FROM_ADDRESS;
+
+const crypto = require('crypto');
+
+//Server Settings
+const port = Number(process.env.SERVER_PORT);
+
+const spdy = require('spdy');
+const helmet = require('helmet');
+
+const caCrt = fs.readFileSync(process.env.SSL_CA_FILE).toString();
+
+const sslOptions = {
   secureProtocol: 'SSLv23_method', //Poodlebleed Fix - Disables SSL 3.0
   secureOptions: constants.SSL_OP_NO_SSLv3,	//Poodlebleed Fix - Disables SSL 3.0
-  key: fs.readFileSync('/home/bitnami/notekeeper.bithatchery.com.key').toString(),
-  cert: fs.readFileSync('/home/bitnami/notekeeper.bithatchery.com.crt').toString(),
+  key: fs.readFileSync(process.env.SSL_KEY_FILE).toString(),
+  cert: fs.readFileSync(process.env.SSL_CERT_FILE).toString(),
   ca: [caCrt],
   ciphers: 'ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384', //:RC4-SHA:RC4:HIGH:!MD5:!aNULL:!EDH:!AESGCM
   honorCipherOrder: true,
@@ -32,50 +49,44 @@ var sslOptions = {
 
 const express = require('express')
 
-var jwt = require('jsonwebtoken');
+const jwt = require('jsonwebtoken');
 
 const bcrypt = require('bcrypt');
 const saltRounds = 10;
 
-var multer = require('multer');
-var upload = multer();
-var app = express();
+const multer = require('multer');
+const upload = multer();
+const app = express();
 
-var bodyParser = require('body-parser');
+const bodyParser = require('body-parser');
 
 'use strict';
 const nodemailer = require('nodemailer');
 
 
-var jwtKey = "somwkey";
-var authKey = "anotherkey";
+const jwtKey = process.env.JWT_KEY;
+const authKey = process.env.AUTH_KEY;
 
 //Start of DB Schema
 const mongoose = require('./models/model');
-
-var UserModel = mongoose.model('User');
-var NoteModel = mongoose.model('Note');
 
 //End of DB Schema
 
 //Start of REST Server
 
-//Endpoint Modules
-const newUser_module = require('./modules/newUser');
-const userLogin_module = require('./modules/userLogin');
-const getNotes_module = require('./modules/getNotes');
-const newNote_module = require('./modules/newNote');
-const deleteNote_module = require('./modules/deleteNote');
-const changePassword_module = require('./modules/changePassword');
-const deleteUser_module = require('./modules/deleteUser');
-const editNote_module = require('./modules/editNote');
-
 //Controller Module
 const ctrTest = require('./controllers/ctrTest');
+const publicCtr = require('./modules/public'); //Public Endpoints
+const privateCtr = require('./modules/private'); //Private Endpoints
+
+//  apply to all requests
+app.use(limiter);
 
 app.get('/', (req, res) => res.send('Hello World!'));
 
 const cors = require("cors");
+
+app.use(helmet());
 
 app.options('*', cors());
 
@@ -85,32 +96,63 @@ app.use(bodyParser.urlencoded({ extended: true })); // support encoded bodies
 // for parsing multipart/form-data
 app.use(upload.array());
 
-//Create New User
-app.post('/newuser', (req, res) => { newUser_module.newUser(req, res, UserModel, nodemailer, bcrypt, saltRounds, emailHost, emailPort, emailSecure, emailUsername, emailPassword, emailFromAddr) });
+// expose db models to app
+app.locals.UserModel = mongoose.model('User');
+app.locals.NoteModel = mongoose.model('Note');
 
-//User login
-app.post('/userlogin', (req, res) => { userLogin_module.userLogin(req, res, UserModel, bcrypt, jwt, jwtKey, authKey) });
+// expose libs to app
+app.locals.nodemailer = nodemailer;
+app.locals.bcrypt = bcrypt;
+app.locals.crypto = crypto;
+app.locals.jwt = jwt;
 
-//Load my notebook page
-app.get('/getNotes', (req, res) => { getNotes_module.getNotes(req, res, NoteModel, jwt, jwtKey, authKey) });
-
-//Create new note
-app.post('/newNote', (req, res) => { newNote_module.newNote(req, res, NoteModel, jwt, jwtKey, authKey) });
-
-//Delete Note
-app.delete('/deleteNote/:note_id', (req, res) => { deleteNote_module.deleteNote(req, res, NoteModel, jwt, jwtKey, authKey) });
-
-//Change Password
-app.post('/changePassword', (req, res) => { changePassword_module.changePassword(req, res, UserModel, bcrypt, jwt, jwtKey, authKey, saltRounds) });
-
-//Delete Account
-app.delete('/deleteUser', (req, res) => { deleteUser_module.deleteUser(req, res, UserModel, NoteModel, jwt, jwtKey, authKey) });
-
-//Edit Note
-app.post('/editNote', (req, res) => { editNote_module.editNote(req, res, NoteModel, jwt, jwtKey, authKey) });
+// expost consts to app
+app.locals.saltRounds = saltRounds;
+app.locals.jwtKey = jwtKey;
+app.locals.authKey = authKey;
+app.locals.emailHost = emailHost;
+app.locals.emailPort = emailPort;
+app.locals.emailSecure = emailSecure;
+app.locals.emailUsername = emailUsername;
+app.locals.emailPassword = emailPassword;
+app.locals.emailFromAddr = emailFromAddr;
 
 //ctrTest Controller
 app.use('/ctrTest', ctrTest);
 
-https.createServer(sslOptions, app).listen(port, () => console.log(`NoteKeeper server listening on port ${port}!`));
+app.use('/pub', publicCtr);
+
+var authMiddleWare = (req, res, next) => {
+
+		var decipher = crypto.createDecipher('aes-128-cbc', authKey);
+		var decrypted_jwt = decipher.update(req.headers.authorization, 'hex', 'utf8');
+		decrypted_jwt += decipher.final('utf8');
+
+	  jwt.verify(decrypted_jwt, jwtKey, function(err, decoded) {
+			console.log("Verifying JWT " + JSON.stringify(decoded)); // bar
+
+			if (!err && decoded) {
+				res.locals.id = decoded.id;
+				res.locals.email = decoded.email;
+				next();
+			} else {
+				res.set({
+			"Content-Type": "application/json",
+			"Access-Control-Allow-Origin" : "*"
+			});
+
+				res.status(401).send("Invalid Auth Token!");
+			}
+
+		});
+};
+
+app.use(authMiddleWare);
+
+app.use('/pvt', privateCtr);
+
+//https.createServer(sslOptions, app).listen(port, () => console.log(`NoteKeeper server listening on port ${port}!`));
+
+spdy.createServer(sslOptions, app).listen(port, () => console.log(`NoteKeeper server listening on port ${port}!`));
+
 //End of REST Server

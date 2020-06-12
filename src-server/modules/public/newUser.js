@@ -1,7 +1,21 @@
-exports.newUser = (req, res, UserModel, nodemailer, bcrypt, saltRounds, emailHost, emailPort, emailSecure, emailUsername, emailPassword, emailFromAddr) => {
+exports.newUser = (req, res) => {
   console.log('\n\nNewUser\n\n');
 
   console.log(req.body);
+
+  const UserModel = req.app.locals.UserModel;
+
+  const bcrypt = req.app.locals.bcrypt;
+  const nodemailer = req.app.locals.nodemailer;
+
+  const saltRounds = req.app.locals.saltRounds;
+
+  const emailHost = req.app.locals.emailHost;
+  const emailPort = req.app.locals.emailPort;
+  const emailSecure = req.app.locals.emailSecure;
+  const emailUsername = req.app.locals.emailUsername;
+  const emailPassword = req.app.locals.emailPassword;
+  const emailFromAddr = req.app.locals.emailFromAddr;
 
                   var data = req.body;
 
