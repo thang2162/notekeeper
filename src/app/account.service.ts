@@ -22,7 +22,7 @@ export class AccountService {
 
   /** GET Notes from the server */
   getNotes (): Observable<Note[]> {
-    return this.http.get<Note[]>(this.apiUrl + 'getNotes', this.httpOptions)
+    return this.http.get<Note[]>(this.apiUrl + 'pvt/getNotes', this.httpOptions)
       .pipe(
         tap(res => {
           console.log(JSON.stringify(res))
@@ -32,7 +32,7 @@ export class AccountService {
 
   /** Create a new user */
   newUser (email: string, password: string): Observable<any> {
-    return this.http.post<any>(this.apiUrl + 'newUser', {email: email, password: password}, {}).pipe(
+    return this.http.post<any>(this.apiUrl + 'pub/newUser', {email: email, password: password}, {}).pipe(
       tap(res => {
         console.log(JSON.stringify(res))
       })
@@ -41,7 +41,7 @@ export class AccountService {
 
   /** Login a user */
   loginUser (email: string, password: string): Observable<any> {
-    return this.http.post<any>(this.apiUrl + 'userLogin', {email: email, password: password}, {}).pipe(
+    return this.http.post<any>(this.apiUrl + 'pub/userLogin', {email: email, password: password}, {}).pipe(
       tap(res => {
         if(res.jwt) {
           console.log(res.jwt);
@@ -56,7 +56,7 @@ export class AccountService {
 
   /** Edit Note */
   editNote (title: string, note: string, note_id: string): Observable<any> {
-    return this.http.post<any>(this.apiUrl + 'editNote', {title: title, note: note, note_id: note_id}, this.httpOptions).pipe(
+    return this.http.post<any>(this.apiUrl + 'pvt/editNote', {title: title, note: note, note_id: note_id}, this.httpOptions).pipe(
       tap(res => {
         console.log(JSON.stringify(res))
       })
@@ -65,7 +65,7 @@ export class AccountService {
 
   /** New Note */
   newNote (title: string, note: string): Observable<any> {
-    return this.http.post<any>(this.apiUrl + 'newNote', {title: title, note: note}, this.httpOptions).pipe(
+    return this.http.post<any>(this.apiUrl + 'pvt/newNote', {title: title, note: note}, this.httpOptions).pipe(
       tap(res => {
         console.log(JSON.stringify(res))
       })
@@ -74,7 +74,7 @@ export class AccountService {
 
   /** Deletes a Note */
   deleteNote (note_id: string): Observable<any> {
-    return this.http.delete<any>(this.apiUrl + 'deleteNote/' + note_id, this.httpOptions).pipe(
+    return this.http.delete<any>(this.apiUrl + 'pvt/deleteNote/' + note_id, this.httpOptions).pipe(
       tap(res => {
         console.log(JSON.stringify(res))
       })
@@ -83,7 +83,7 @@ export class AccountService {
 
   /** Deletes a user */
   deleteUser (): Observable<any> {
-    return this.http.delete<any>(this.apiUrl + 'deleteUser', this.httpOptions).pipe(
+    return this.http.delete<any>(this.apiUrl + 'pvt/deleteUser', this.httpOptions).pipe(
       tap(res => {
         console.log(JSON.stringify(res))
       })
@@ -92,7 +92,7 @@ export class AccountService {
 
   /** Change Password */
   changePassword (oldPassword: string, newPassword: string): Observable<any> {
-    return this.http.post<any>(this.apiUrl + 'changePassword', {oldPassword: oldPassword, newPassword: newPassword}, this.httpOptions).pipe(
+    return this.http.post<any>(this.apiUrl + 'pvt/changePassword', {oldPassword: oldPassword, newPassword: newPassword}, this.httpOptions).pipe(
       tap(res => {
         console.log(JSON.stringify(res))
       })

@@ -15,7 +15,7 @@ exports.newNote = (req, res) => {
     nNote.CreatedOn = new Date();
     nNote.title = data.title;
     nNote.note = data.note;
-    nNote.email = decoded.email;
+    nNote.email = res.locals.email;
 
     res.set({
     "Content-Type": "application/javascript",

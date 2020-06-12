@@ -1,6 +1,6 @@
 var mongoose = require('mongoose/');
-const dotenv = require('dotenv');
-dotenv.config();
+const {resolve} = require('path');
+require('dotenv').config({ path: resolve(__dirname,'../.env') });
 
 mongoose.set('useFindAndModify', false);
 mongoose.set('useUnifiedTopology', true);

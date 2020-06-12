@@ -36,6 +36,8 @@ exports.newUser = (req, res) => {
 
   		 if(!doc){
 
+         console.log('\nSending Email...\n');
+
   		   // create reusable transporter object using the default SMTP transport
   		   let transporter = nodemailer.createTransport({
   		       host: emailHost,
@@ -47,6 +49,8 @@ exports.newUser = (req, res) => {
   		       }
   		   });
 
+         console.log(transporter);
+
   		   // setup email data with unicode symbols
   		   let mailOptions = {
   		       from: emailFromAddr, // sender address
@@ -55,9 +59,12 @@ exports.newUser = (req, res) => {
   		       text: 'Hi There, ' + '\n\nEmail: ' + data.email + '\nPassword: ' + data.password
   		   };
 
+         console.log('\n3\n');
+
   		   // send mail with defined transport object
   		   transporter.sendMail(mailOptions, (error, info) => {
   		       if (error) {
+                console.log('\nEmail Error\n');
   		           return console.log(error);
   		       }
   		       else {

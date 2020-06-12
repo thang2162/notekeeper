@@ -5,7 +5,22 @@ const http = require('http'),
 	constants = require('constants'),
     https = require('https');
 
-require('dotenv').config();
+		const caCrt = fs.readFileSync('/home/bitnami/notekeeper.bithatchery.com.ca-bundle').toString();
+
+		const sslOptions = {
+		  secureProtocol: 'SSLv23_method', //Poodlebleed Fix - Disables SSL 3.0
+		  secureOptions: constants.SSL_OP_NO_SSLv3,	//Poodlebleed Fix - Disables SSL 3.0 */
+		  key: fs.readFileSync('/home/bitnami/notekeeper.bithatchery.com.key').toString(),
+		  cert: fs.readFileSync('/home/bitnami/notekeeper.bithatchery.com.crt').toString(),
+		  ca: [caCrt],
+		  ciphers: 'ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384', //:RC4-SHA:RC4:HIGH:!MD5:!aNULL:!EDH:!AESGCM
+		  honorCipherOrder: true,
+		  requestCert: false
+		};
+
+require('dotenv').config({ path: path.resolve(__dirname,'./.env') });
+
+console.log(process.env.SERVER_PORT);
 
 const rateLimit = require("express-rate-limit");
 
@@ -21,7 +36,7 @@ const limiter = rateLimit({
 //Email Settings
 const emailHost = process.env.EMAIL_HOST;
 const emailPort = Number(process.env.EMAIL_PORT);
-const emailSecure = Boolean(process.env.EMAIL_IS_SECURE);
+const emailSecure = process.env.EMAIL_IS_SECURE === 'true' ? true : false;
 const emailUsername = process.env.EMAIL_USERNAME;
 const emailPassword = process.env.EMAIL_PASSWORD;
 const emailFromAddr = process.env.EMAIL_FROM_ADDRESS;
@@ -33,19 +48,6 @@ const port = Number(process.env.SERVER_PORT);
 
 const spdy = require('spdy');
 const helmet = require('helmet');
-
-const caCrt = fs.readFileSync(process.env.SSL_CA_FILE).toString();
-
-const sslOptions = {
-  secureProtocol: 'SSLv23_method', //Poodlebleed Fix - Disables SSL 3.0
-  secureOptions: constants.SSL_OP_NO_SSLv3,	//Poodlebleed Fix - Disables SSL 3.0
-  key: fs.readFileSync(process.env.SSL_KEY_FILE).toString(),
-  cert: fs.readFileSync(process.env.SSL_CERT_FILE).toString(),
-  ca: [caCrt],
-  ciphers: 'ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384', //:RC4-SHA:RC4:HIGH:!MD5:!aNULL:!EDH:!AESGCM
-  honorCipherOrder: true,
-  requestCert: false
-};
 
 const express = require('express')
 
@@ -79,10 +81,10 @@ const ctrTest = require('./controllers/ctrTest');
 const publicCtr = require('./modules/public'); //Public Endpoints
 const privateCtr = require('./modules/private'); //Private Endpoints
 
+app.get('/', (req, res) => res.status(200).send('This is the NoteKeeper Server!'));
+
 //  apply to all requests
 app.use(limiter);
-
-app.get('/', (req, res) => res.send('Hello World!'));
 
 const cors = require("cors");
 
@@ -109,7 +111,7 @@ app.locals.jwt = jwt;
 // expost consts to app
 app.locals.saltRounds = saltRounds;
 app.locals.jwtKey = jwtKey;
-app.locals.authKey = authKey;
+app.locals.authKey = authKey; //Must be a 32 Character String
 app.locals.emailHost = emailHost;
 app.locals.emailPort = emailPort;
 app.locals.emailSecure = emailSecure;
@@ -124,11 +126,23 @@ app.use('/pub', publicCtr);
 
 var authMiddleWare = (req, res, next) => {
 
-		var decipher = crypto.createDecipher('aes-128-cbc', authKey);
-		var decrypted_jwt = decipher.update(req.headers.authorization, 'hex', 'utf8');
+		console.log('Auth')
+
+		console.log(req.headers.authorization);
+
+		const tokenParts = req.headers.authorization.split(':');
+
+    //extract the IV from the first half of the value
+    const IV = Buffer.from(tokenParts.shift(), 'hex');
+
+		//extract the encrypted text without the IV
+    const encryptedText = Buffer.from(tokenParts.join(':'), 'hex');
+
+		var decipher = crypto.createDecipheriv('aes-256-ctr', authKey, IV);
+		var decrypted_jwt = decipher.update(encryptedText, 'hex', 'utf8');
 		decrypted_jwt += decipher.final('utf8');
 
-	  jwt.verify(decrypted_jwt, jwtKey, function(err, decoded) {
+	  jwt.verify(decrypted_jwt.toString(), jwtKey, function(err, decoded) {
 			console.log("Verifying JWT " + JSON.stringify(decoded)); // bar
 
 			if (!err && decoded) {
@@ -147,11 +161,9 @@ var authMiddleWare = (req, res, next) => {
 		});
 };
 
-app.use(authMiddleWare);
+app.use('/pvt', authMiddleWare, privateCtr);
 
-app.use('/pvt', privateCtr);
-
-//https.createServer(sslOptions, app).listen(port, () => console.log(`NoteKeeper server listening on port ${port}!`));
+// https.createServer(sslOptions, app).listen(port, () => console.log(`NoteKeeper server listening on port ${port}!`));
 
 spdy.createServer(sslOptions, app).listen(port, () => console.log(`NoteKeeper server listening on port ${port}!`));
 

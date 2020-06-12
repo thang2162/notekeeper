@@ -34,7 +34,9 @@ exports.userLogin = (req, res) => {
 
           var token = jwt.sign({ id: doc._id.toString(), email: doc.email  }, jwtKey, {expiresIn: 86400, issuer: "NoteKeeper"});
 
-          var cipher = crypto.createCipher('aes-128-cbc', authKey);
+          const iv = Buffer.from(crypto.randomBytes(16));
+
+          var cipher = crypto.createCipheriv('aes-256-ctr', authKey, iv);
 
           var encrypted_token = cipher.update(token, 'utf8', 'hex');
           encrypted_token += cipher.final('hex');
@@ -42,7 +44,7 @@ exports.userLogin = (req, res) => {
           console.log("PW Check Success: " + doc)
           resData.status = 'success';
           resData.msg = 'You\'re LoggedIn!';
-          resData.jwt = encrypted_token;
+          resData.jwt = `${iv.toString('hex')}:${encrypted_token.toString()}`;
 
           res.set({
         "Content-Type": "application/javascript",
