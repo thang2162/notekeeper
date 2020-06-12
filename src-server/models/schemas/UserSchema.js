@@ -1,5 +1,6 @@
 module.exports = {
 	CreatedOn: Date,
   email: String,
-  password: String
+  password: String,
+	resetKey: String
 };

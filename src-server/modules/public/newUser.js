@@ -31,7 +31,8 @@ exports.newUser = (req, res) => {
   UserModel.findOneAndUpdate({ email: data.email },{ $setOnInsert: {
   	CreatedOn: new Date(),
     email: data.email,
-    password: hash}},
+    password: hash,
+    resetKey: null}},
      { upsert: true }, function (err, doc) {
 
   		 if(!doc){

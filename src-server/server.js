@@ -74,6 +74,9 @@ const ctrTest = require('./controllers/ctrTest');
 const publicCtr = require('./modules/public'); //Public Endpoints
 const privateCtr = require('./modules/private'); //Private Endpoints
 
+const authMiddleWare = require('./modules/Auth');
+const keyGen = require('./modules/KeyGen');
+
 app.get('/', (req, res) => res.status(200).send('This is the NoteKeeper Server!'));
 
 //  apply to all requests
@@ -102,6 +105,7 @@ app.locals.nodemailer = nodemailer;
 app.locals.bcrypt = bcrypt;
 app.locals.crypto = crypto;
 app.locals.jwt = jwt;
+app.locals.keyGen = keyGen;
 
 // expost consts to app
 app.locals.saltRounds = saltRounds;
@@ -118,63 +122,6 @@ app.locals.emailFromAddr = emailFromAddr;
 app.use('/ctrTest', ctrTest);
 
 app.use('/pub', publicCtr);
-
-var authMiddleWare = (req, res, next) => {
-
-    console.log('Auth')
-
-    console.log(req.headers.authorization);
-
-    if (req.headers.authorization) {
-
-        const tokenParts = req.headers.authorization.split(':');
-
-        if (tokenParts[1]) {
-
-            //extract the IV from the first half of the value
-            const IV = Buffer.from(tokenParts.shift(), 'hex');
-
-            //extract the encrypted text without the IV
-            const encryptedText = Buffer.from(tokenParts.join(':'), 'hex');
-
-            var decipher = crypto.createDecipheriv('aes-256-ctr', authKey, IV);
-            var decrypted_jwt = decipher.update(encryptedText, 'hex', 'utf8');
-            decrypted_jwt += decipher.final('utf8');
-
-            jwt.verify(decrypted_jwt.toString(), jwtKey, function(err, decoded) {
-                console.log("Verifying JWT " + JSON.stringify(decoded)); // bar
-
-                if (!err && decoded) {
-                    res.locals.id = decoded.id;
-                    res.locals.email = decoded.email;
-                    next();
-                } else {
-                    res.set({
-                        "Content-Type": "text/plain",
-                        "Access-Control-Allow-Origin": "*"
-                    });
-
-                    res.status(401).send("Invalid Auth Token!");
-                }
-
-            });
-        } else {
-            res.set({
-                "Content-Type": "text/plain",
-                "Access-Control-Allow-Origin": "*"
-            });
-
-            res.status(401).send("Invalid Auth Token!");
-        }
-    } else {
-        res.set({
-            "Content-Type": "text/plain",
-            "Access-Control-Allow-Origin": "*"
-        });
-
-        res.status(401).send("Invalid Auth Token!");
-    }
-};
 
 app.use('/pvt', authMiddleWare, privateCtr);
 
