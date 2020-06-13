@@ -16,6 +16,7 @@ import { NotebookComponent } from './pages/notebook/notebook.component';
 import { ChangepasswordComponent } from './pages/changepassword/changepassword.component';
 import { LoaderComponent } from './components/loader/loader.component';
 import { ClickOutsideDirective } from './click-outside.directive';
+import { ResetpasswordComponent } from './pages/resetpassword/resetpassword.component';
 @NgModule({
   declarations: [
     AppComponent,
@@ -28,7 +29,8 @@ import { ClickOutsideDirective } from './click-outside.directive';
     NotebookComponent,
     ChangepasswordComponent,
     LoaderComponent,
-    ClickOutsideDirective
+    ClickOutsideDirective,
+    ResetpasswordComponent
   ],
   imports: [
     BrowserModule,

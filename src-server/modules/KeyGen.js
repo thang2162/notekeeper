@@ -4,6 +4,6 @@ exports.gen_key = (len, optObj = null) => {
 
   console.log('Generate Key');
 
-  return generator.generate({len, ...optObj});
+  return generator.generate({length: len, ...optObj});
 
 };

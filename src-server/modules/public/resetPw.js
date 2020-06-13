@@ -16,16 +16,18 @@ exports.resetPw = (req, res) => {
     //console.log(buff);
     //  UserModel.createIndexes( { "$**": "text" } )
     UserModel.findOne({
-        email: res.locals.email
+        email: data.email
     }, function(err, doc) {
 
-        if (doc != null && doc.resetKey === data.key && doc.resetKey !== null) {
+        if (doc != null && doc.resetKey === data.key
+          && data.email === doc.email
+          && doc.resetKey !== null) {
 
             bcrypt.hash(data.password, saltRounds, function(err, hash) {
                 // Store hash in your password DB.
 
                 UserModel.updateOne({
-                        email: res.locals.email
+                        email: data.email
                     }, {
                         $set: {
                             password: hash,
@@ -70,7 +72,7 @@ exports.resetPw = (req, res) => {
         } else {
 
             resData.status = 'failed';
-            resData.msg = 'Invalid Reset Key.';
+            resData.msg = 'Invalid Reset Key or Email';
 
             res.set({
                 "Content-Type": "application/javascript",

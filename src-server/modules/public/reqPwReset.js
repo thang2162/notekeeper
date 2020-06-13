@@ -18,7 +18,7 @@ exports.reqPwReset = (req, res) => {
 
     var resData = {};
 
-    let resetToken = req.app.locals.gen_key(32, {
+    let resetToken = req.app.locals.keyGen.gen_key(32, {
         //exclude: '?=&',
         numbers: true,
         uppercase: true,
@@ -27,7 +27,9 @@ exports.reqPwReset = (req, res) => {
         strict: true
     });
 
-    UserModel.updateOne({
+    console.log(resetToken);
+
+    UserModel.findOneAndUpdate({
             email: data.email
         }, {
             $set: {
@@ -36,7 +38,9 @@ exports.reqPwReset = (req, res) => {
         },
         function(err, doc) {
 
-            if (!err) {
+          console.log(JSON.stringify(doc) + "\n\n" + err)
+
+            if (doc) {
 
                 console.log('\nSending Email...\n');
 
@@ -58,7 +62,9 @@ exports.reqPwReset = (req, res) => {
                     from: emailFromAddr, // sender address
                     to: data.email, // list of receivers
                     subject: 'Reset Your Password!', // Subject line
-                    text: 'Please use the following link to reset your password:, ' + '\n\nhttps://notekeeper.bithatchery.com/#/resetPw?key=' + resetToken
+                    text: 'Please use the following link to reset your password: ' +
+                    '\n\nhttps://notekeeper.bithatchery.com/#/resetpassword?key=' + resetToken
+                    + '&email=' + data.email
                 };
 
                 console.log('\n3\n');

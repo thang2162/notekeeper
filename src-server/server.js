@@ -123,7 +123,7 @@ app.use('/ctrTest', ctrTest);
 
 app.use('/pub', publicCtr);
 
-app.use('/pvt', authMiddleWare, privateCtr);
+app.use('/pvt', authMiddleWare.auth, privateCtr);
 
 // https.createServer(sslOptions, app).listen(port, () => console.log(`NoteKeeper server listening on port ${port}!`));
 

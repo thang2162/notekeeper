@@ -15,16 +15,27 @@ export class LoginComponent {
   faCheck = faCheck;
   faEnvelope = faEnvelope;
 
+  forgotModal: string = '';
+
   isActive: string = '';
   modalBody: string;
   modalTitle: string;
   email: string = null;
   password: string = null;
 
+  email2: string = null;
+
   validateEmail: string = '';
   validatePassword: string = '';
 
+  validateEmail2: string = '';
+
   disableSubmit: boolean = true;
+  disableSubmit2: boolean = true;
+
+  openForgot () {
+    this.forgotModal = 'is-active';
+  }
 
   emailIsValid (email:string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
@@ -61,16 +72,50 @@ export class LoginComponent {
         this.validatePassword = 'is-danger';
         this.disableSubmit = true;
       }
+    } else if (field === 'email2') {
+      if (this.emailIsValid(this.email2)) {
+
+        this.validateEmail2 = 'is-success';
+
+        this.disableSubmit2 = false;
+
+      } else {
+        this.validateEmail2 = 'is-danger';
+        this.disableSubmit2 = true;
+      }
     }
   }
 
   closeModal () {
-    this.isActive = ''
+    this.isActive = '';
+    this.forgotModal = '';
+    this.email2 = null
   }
 
   toggleLoader (show: boolean) {
     this.loaderService.toggleLoader(show);
   }
+
+  submitForgotPw(): void {
+    this.toggleLoader(true);
+    this.accountService.reqResetPw(this.email2)
+      .subscribe(res => {
+        this.toggleLoader(false);
+        // alert(JSON.stringify(res))
+        if (res.status === 'success') {
+          this.closeModal();
+
+          this.modalTitle = 'Forgot Password?';
+          this.modalBody = res.msg;
+          this.isActive = 'is-active';
+        } else {
+          this.modalTitle = 'Error';
+          this.modalBody = res.msg;
+          this.isActive = 'is-active';
+        }
+      });
+  }
+
 
   loginUser(): void {
     this.toggleLoader(true);

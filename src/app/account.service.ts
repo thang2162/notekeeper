@@ -30,6 +30,24 @@ export class AccountService {
       );
   }
 
+  /** Reset Password */
+  resetPw (email: string, key: string, password: string): Observable<any> {
+    return this.http.post<any>(this.apiUrl + 'pub/resetPw', {email: email, password: password, key: key}, {}).pipe(
+      tap(res => {
+        console.log(JSON.stringify(res))
+      })
+    );
+  }
+
+  /** Request Password Reset */
+  reqResetPw (email: string): Observable<any> {
+    return this.http.post<any>(this.apiUrl + 'pub/reqPwReset', {email: email}, {}).pipe(
+      tap(res => {
+        console.log(JSON.stringify(res))
+      })
+    );
+  }
+
   /** Create a new user */
   newUser (email: string, password: string): Observable<any> {
     return this.http.post<any>(this.apiUrl + 'pub/newUser', {email: email, password: password}, {}).pipe(
