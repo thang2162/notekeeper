@@ -11,7 +11,7 @@ export class AccountService {
 
   loggedIn$: Subject<boolean> = new Subject<boolean>();
 
-  private apiUrl = 'https://notekeeper.bithatchery.com:5443/';  // URL to web api
+  private apiUrl = 'https://notekeeper.bithatchery.com/api/';  // URL to web api
 
   httpOptions = {
     headers: new HttpHeaders({ 'authorization': sessionStorage.jwt ? sessionStorage.jwt : '' })
