@@ -32,7 +32,7 @@ const sslOptions = {
     requestCert: false
 };
 
-console.log(process.env.SERVER_PORT);
+console.log(process.env.NODE_PORT && process.env.NODE_PORT !== '' ? process.env.NODE_PORT : process.env.SERVER_PORT);
 
 // Enable if you're behind a reverse proxy (Heroku, Bluemix, AWS ELB, Nginx, etc)
 // see https://expressjs.com/en/guide/behind-proxies.html
@@ -52,7 +52,7 @@ const emailPassword = process.env.EMAIL_PASSWORD;
 const emailFromAddr = process.env.EMAIL_FROM_ADDRESS;
 
 //Server Settings
-const port = Number(process.env.SERVER_PORT);
+const port = Number(process.env.NODE_PORT && process.env.NODE_PORT !== '' ? process.env.NODE_PORT : process.env.SERVER_PORT);
 
 const saltRounds = 10;
 
